@@ -18,5 +18,5 @@ venv/
 *.pdf
 *.ini
 *.swp
-*.swo
+*.py.swo
 src_ref
