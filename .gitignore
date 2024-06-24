@@ -1,0 +1,21 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# Others
+*.txt
+*.pdf
+*.ini
+*.swp
+src_ref
