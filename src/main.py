@@ -1,123 +1,133 @@
-import os
-import sys
-import re
+import six
 import configparser
-import requests
-import json
-import threading
+import re
 import pdb
 
-from requests.adapters import HTTPAdapter
-from urllib3.util import Retry
-from time import sleep
-import datetime
-from random import randint
-from requests import RequestException
-from bs4 import BeautifulSoup
+from pyfiglet import figlet_format
+from pyconfigstore import ConfigStore
+from PyInquirer import (Token, ValidationError, Validator, print_json, prompt,
+                        style_from_dict)
+from prompt_toolkit import document
 
-from cli import ask
+try:
+    import colorama
+    colorama.init()
+except ImportError:
+    colorama = None
+
+try:
+    from termcolor import colored
+except ImportError:
+    colored = None
+
+config = configparser.ConfigParser()
+
+style = style_from_dict({
+  })
 
 
-class PaperParser:
-    def __init__(self, cookie, conf_list):
-        self.cookie = {
-            'PHPSESSID': cookie
-        }
-        self.conf_list = conf_list
-        self.base = "https://dl.acm.org"
-        self.session = requests.Session()
+def log(string, color, font="slant", figlet=False):
+    if colored:
+        if not figlet:
+            six.print_(colored(string, color))
+        else:
+            six.print_(colored(figlet_format(
+                string, font=font), color))
+    else:
+        six.print_(string)
 
-        self.filter_url = {
-            'ISSCC': None,
-            'MICRO': "conference/micro/proceedings",
-            'ISCA': None,
-            'DATE': None,
-            'DAC': None,
-            'ASP-DAC': None,
-            'HPCA': None
-        }
+def ask(type, name, message, validate=None, choices=[]):
+    questions = [
+        {
+            'type': type,
+            'name': name,
+            'message': message,
+            'validate': validate,
+        },
+    ]
+    if choices:
+        questions[0].update({
+            'choices': choices,
+        })
+    answers = prompt(questions, style=style)
+    return answers
 
-    def create_dir(self, path, name):
-        os.chdir(path)
-        try:
-            os.mkdir(re.sub('[:/]', '', name))
-        except:
-            print('Directory exists.')
+def run():
+    while(True):    
+        todo = ask(type='list',
+                name='todo',
+                message='Select:',
+                     choices=[
+                       'PaperParser',
+                       'PaperReader',
+                       'Leave'
+                     ])['todo']
+        
+        if todo == 'PaperParser': 
+            from PaperParser import PaperParser as PParser
+
+            def askCookie():
+                cookie = ask(type='input',
+                             name='cookie',
+                             message='Enter JSESSIONID cookie:')
+                config['DEFAULT']['cookie'] = cookie['cookie']
+
+                with open('config.ini', 'w') as configfile:
+                    config.write(configfile)
+                return cookie['cookie']
+
+            # log("SteamGifts Bot", color="blue", figlet=True)
+            # log("Welcome to SteamGifts Bot!", "green")
+            # log("Created by: github.com/stilManiac", "white")
+
+            config.read('config.ini')
+            if not config['DEFAULT'].get('cookie'):
+                cookie = askCookie()
+            else:
+                re_enter_cookie = ask(type='confirm',
+                                    name='reenter',
+                                    message='Do you want to enter new cookie?')['reenter']
+                if re_enter_cookie:
+                    cookie = askCookie()
+                else:
+                    cookie = config['DEFAULT'].get('cookie')
+
+            conf_list = ask(type='list',
+                         name='conf_list',
+                         message='Select Conference:',
+                         choices=[
+                             'ISSCC',
+                             'MICRO',
+                             'ISCA',
+                             'DATE',
+                             'DAC',
+                             'ASP-DAC',
+                             'HPCA'
+                         ])['conf_list']
+
+            P = PParser(cookie, conf_list)
+            P.start()
+
+        if todo == 'PaperReader':
+            conf_list = ask(type='list',
+                         name='conf_list',
+                         message='Select Conference:',
+                         choices=[
+                             'ISSCC',
+                             'MICRO',
+                             'ISCA',
+                             'DATE',
+                             'DAC',
+                             'ASP-DAC',
+                             'HPCA'
+                         ])['conf_list']
             pass
 
-    def get_soup(self, url):
-        r = self.requests_retry_session().get(url)
-        r = requests.get(url, cookies=self.cookie)
-        soup = BeautifulSoup(r.text, 'html.parser')
-        return soup
+        if todo == 'Leave':
+           break 
 
-    def requests_retry_session(
-        self,
-        retries=5,
-        backoff_factor=0.3
-    ):
-        session = self.session or requests.Session()
-        retry = Retry(
-            total=retries,
-            read=retries,
-            connect=retries,
-            backoff_factor=backoff_factor,
-            status_forcelist=(500, 502, 504),
-        )
-        adapter = HTTPAdapter(max_retries=retry)
-        session.mount('http://', adapter)
-        session.mount('https://', adapter)
-        return session
 
-    def get_conf_content(self):
-        filtered_url = self.filter_url[self.conf_list]
-        preceedings_url = f"{self.base}/{filtered_url}"
+if __name__ == '__main__':
+    run()
 
-        soup = self.get_soup(preceedings_url)
-        preceeding_list = soup.find_all('div', {'class': 'conference__title left-bordered-title'}) 
-        breakpoint()
 
-        preceeding = ask(type='list',
-                        name='preceeding',
-                        message='Select preceedings:',
-                        choices=[
-                            preceeding_list[num].find('a').text for num in range(len(preceeding_list))
-                        ])['preceeding']
-                
-        for num in range(len(preceeding_list)):
-            if preceeding_list[num].a.text.find(preceeding) == 0:
-               preceeding_url = f"{self.base}{preceeding_list[num].a['href']}"
-        self.create_dir(os.getcwd(), preceeding)
-
-        soup = self.get_soup(preceeding_url)
-        # content_wrapper = soup.find_all('div', {'class': 'table-of-content-wrapper'})[0].find_all('a')  
-        content_wrapper = soup.find_all('div', {'class': 'table-of-content-wrapper'})[0].find_all('a')  
-
-        headings = []
-        for idx in range(len(content_wrapper)):
-            try:
-                if content_wrapper[idx]['id'].find('heading') == 0:
-                    headings.append(content_wrapper[idx]['href'])
-            except:
-                pass
-        
-        workpath = os.getcwd()
-        os.chdir(re.sub('[:/]', '', preceeding))
-        for num_heading in range(len(headings)):
-            heading_url = f"{self.base}{headings[num_heading]}"
-            soup = self.get_soup(heading_url)
-            pdfs = soup.find_all('h5', {'class': 'issue-item__title'})
-
-            print("Downloading...")
-            for num_pdf in range(len(pdfs)):
-                pdf_url = pdfs[num_pdf].a['href']
-                pdf_url = f'{self.base}{pdf_url}' 
-                pdf_title = pdfs[num_pdf].text
-
-                res = requests.get(pdf_url) 
-                pdf = open(re.sub('[:/]', '', pdf_title) + ".pdf", 'wb')
-                pdf.write(res.content)
-                pdf.close()
-            
-    def start(self):
-        self.get_conf_content()
