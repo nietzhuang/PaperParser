@@ -19,4 +19,5 @@ venv/
 *.ini
 *.swp
 *.py.swo
+.nfs*
 src_ref
