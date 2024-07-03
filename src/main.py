@@ -1,6 +1,7 @@
 import six
 import configparser
 import re
+import os
 import pdb
 
 from pyfiglet import figlet_format
@@ -105,23 +106,22 @@ def run():
                              'HPCA'
                          ])['conf_list']
 
-            P = PParser(cookie, conf_list)
-            P.start()
+            PP = PParser(cookie, conf_list)
+            PP.start()
 
         if todo == 'PaperReader':
-            conf_list = ask(type='list',
-                         name='conf_list',
-                         message='Select Conference:',
-                         choices=[
-                             'ISSCC',
-                             'MICRO',
-                             'ISCA',
-                             'DATE',
-                             'DAC',
-                             'ASP-DAC',
-                             'HPCA'
-                         ])['conf_list']
-            pass
+           from PaperReader import PaperReader
+           dir_list = os.listdir('paper')  
+           dir_paper = ask(type='list',
+                       name='dir_paper',
+                       message='Select target paper directory:',
+                       choices=[
+                         dir_list[i] for i in range(len(dir_list))
+                       ])['dir_paper']
+
+           PR = PaperReader(dir_paper)
+           PR.start()
+           pass
 
         if todo == 'Leave':
            break 

@@ -114,6 +114,7 @@ class PaperParser:
             heading_url = f"{self.base}{headings[num_heading]}"
             soup = self.get_soup(heading_url)
             pdfs = soup.find_all('h5', {'class': 'issue-item__title'})
+            sleep(10)
 
             for num_pdf in range(len(pdfs)):
                 pdf_url = pdfs[num_pdf].a['href']
@@ -130,6 +131,7 @@ class PaperParser:
                     pdf = open(pdf_title + ".pdf", 'wb')
                     pdf.write(res.content)
                     pdf.close()
+                    sleep(180)
         os.chdir(workpath)
         log("PaperParser completes parsing.", "blue")
 
