@@ -118,10 +118,10 @@ def run():
                        choices=[
                          dir_list[i] for i in range(len(dir_list))
                        ])['dir_paper']
-
-           PR = PaperReader(dir_paper)
+           dir_path = os.getcwd() + '/paper/' + str(dir_paper) 
+            
+           PR = PaperReader(dir_paper, dir_path)
            PR.start()
-           pass
 
         if todo == 'Leave':
            break 
