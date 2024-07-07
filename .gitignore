@@ -15,6 +15,7 @@ venv/
 
 # Others
 *.txt
+*.csv
 *.pdf
 *.ini
 *.swp
