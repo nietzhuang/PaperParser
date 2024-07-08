@@ -52,12 +52,16 @@ class PaperReader:
         paper_hits = []
         for fname in tqdm(os.listdir(self.dir_path)):
             kw_hits = [0] * len(keywords)
-            reader = PyPDF2.PdfReader(os.path.join(self.dir_path, fname), strict=False)
-            for page in range(len(reader.pages)):
-                word_list = reader.pages[page].extract_text().split()
-                for hit_idx in range(len(kw_hits)):
-                    kw_hits[hit_idx] += sum(keywords[hit_idx].lower() == w.lower() 
-                                            or keywords[hit_idx].lower() == w.lower() for w in word_list)
+            try:
+                reader = PyPDF2.PdfReader(os.path.join(self.dir_path, fname), strict=False)
+                for page in range(len(reader.pages)):
+                    word_list = reader.pages[page].extract_text().split()
+                    for hit_idx in range(len(kw_hits)):
+                        kw_hits[hit_idx] += sum(keywords[hit_idx].lower() == w.lower() 
+                                                or keywords[hit_idx].lower() == w.lower() for w in word_list)
+            except:
+                print(str(fname) + ' has ReadError!')
+                pass
             
             paper_hits.append([fname, dict(zip(keywords, kw_hits))])
         
